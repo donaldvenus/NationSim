@@ -10,6 +10,8 @@
 	 */
 	var numRows = 40;
 	var numCols = 80;
+	var nation1 = generateNation('nation1', '#91bbff');
+	var nation2 = generateNation('nation2', '#f76c6c');
 	var grid = generateGrid();
 	simLoop();
 
@@ -34,25 +36,42 @@
 		var province = {};
 		province.row = row;
 		province.col = col;
-
-		/** 
-		 * TODO: create nation objects that own the provinces and associate the
-		 * color with the owner.
-		 */
-		if (Math.floor(Math.random() * 2)) province.owner = 'red';
-		else province.owner = 'blue';
+		if (col < 40) province.owner = nation1;
+		else province.owner = nation2;
 		return province;
+	}
+
+	// Generates a new nation given a name and color
+	function generateNation(name, color) {
+		var nation = {};
+		nation.name = name;
+		nation.color = color;
+		nation.ownedProvinces = [];
+		nation.targetProvince = {};
+
+		return nation;
+	}
+
+	// Color each province based on the province owner.
+	function drawMap() {
+		for (var i = 0; i < numRows; i++) {
+			for (var j = 0; j < numCols; j++) {
+				ctx.fillStyle = grid[i][j].owner.color;
+				ctx.fillRect(j * 10, i * 10, 10, 10);
+			}
+		}
+	}
+
+	// Determine which provinces change ownership this turn.
+	function handleWarfare() {
+		// Do a basic 1v1 strength comparison. Winner gets a random province.
 	}
 
 	// Runs the simulation until stopped.
 	function simLoop() {
 		ctx.clearRect(0,0,800,400);
-		for (var i = 0; i < numRows; i++) {
-			for (var j = 0; j < numCols; j++) {
-				ctx.fillStyle = grid[i][j].owner;
-				ctx.fillRect(j * 10, i * 10, 10, 10);
-			}
-		}
+		handleWarfare();
+		drawMap();
 	}
 })();
 	
