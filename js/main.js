@@ -10,10 +10,14 @@
 	 */
 	var numRows = 40;
 	var numCols = 80;
-	var nation1 = generateNation('nation1', '#91bbff');
-	var nation2 = generateNation('nation2', '#f76c6c');
-	var nationsArr = [nation1, nation2];
+	var colorsArr = ['#e6194b','#3cb44b','#ffe119','#0082c8','#f58231',
+	                 '#911eb4','#46f0f0','#f032e6','#d2f53c','#fabebe',
+	                 '#008080','#e6beff','#aa6e28','#fffac8','#800000',
+	                 '#aaffc3','#808000','#ffd8b1','#000080','#808080',
+	                 '#FFFFFF','#000000'];
+	var nationsArr = [];
 	var grid = generateGrid();
+	createNations(12);
 	initNations();
 	simLoop();
 
@@ -23,7 +27,6 @@
 	 */
 	function generateGrid() {
 		var grid = [];
-
 		for (var i = 0; i < numRows; i++) {
 			grid[i] = [];
 			for (var j = 0; j < numCols; j++) {
@@ -37,25 +40,58 @@
 	function generateProvince(row, col) {
 		var province = {};
 		province.row = row;
+		province.x = row;
 		province.col = col;
+		province.y = col;
 		province.population = Math.floor(Math.random() * 100000);
 		province.econValue = Math.floor(Math.random() * 10);
-		if (col < 40) province.ownerIndex = 0;
-		else province.ownerIndex = 1;
+		province.ownerIndex = -1;
+		province.isCapital = 0;
 		return province;
 	}
 
-	// Generates a new nation given a name and color
-	function generateNation(name, color) {
+	// Generates a new nation given a color
+	function generateNation(color) {
 		var nation = {};
-		nation.name = name;
 		nation.color = color;
 		nation.population = 0;
 		nation.econValue = 0;
 		nation.armySize = 0;
-		nation.targetProvince = undefined;
-
+		do {
+			nation.capital = grid[Math.floor(Math.random() * 40)][Math.floor(Math.random() * 80)];
+		}
+		while (nation.capital.isCapital);
+		nation.capital.isCapital = 1;
 		return nation;
+	}
+
+	// Create all nations on the map.
+	function createNations(numNations) {
+		var fillqueue = [];
+		for (var i = 0; i < numNations; i++) {
+			var nation = generateNation(colorsArr[i]);
+			nation.capital.ownerIndex = i;
+			fillqueue.push(nation.capital);
+			nationsArr.push(nation);
+		}
+		var dx = [-1, 0, 1];
+		var dy = [-1, 0, 1];
+		while (fillqueue.length !== 0) {
+			if (Math.floor(Math.random() * 2) !== 0) {
+				fillqueue.push(fillqueue.shift());
+				continue;
+			}
+			var curr = fillqueue.shift();
+			for (var x = 0; x < 3; x++) {
+				for (var y = 0; y < 3; y++) {
+					var prov = getProvince(curr.x + dx[x], curr.y + dy[y]);
+					if (prov !== undefined && prov.ownerIndex === -1) {
+						prov.ownerIndex = curr.ownerIndex;
+						fillqueue.push(prov);
+					}
+				}
+			}
+		}
 	}
 
 	// Initialize values for each nation.
@@ -78,49 +114,6 @@
 		else return grid[x][y];
 	}
 
-	// Returns a list of bordering enemy provinces.
-	function getBorders(province) {
-		var borders = [];
-		var adj = {};
-		adj = getProvince(province.row - 1, province.col);
-		if (adj && adj.ownerIndex != province.ownerIndex) borders.push(adj);
-		adj = getProvince(province.row - 1, province.col - 1);
-		if (adj && adj.ownerIndex != province.ownerIndex) borders.push(adj);
-		adj = getProvince(province.row - 1, province.col + 1);
-		if (adj && adj.ownerIndex != province.ownerIndex) borders.push(adj);
-		adj = getProvince(province.row, province.col - 1);
-		if (adj && adj.ownerIndex != province.ownerIndex) borders.push(adj);
-		adj = getProvince(province.row, province.col + 1);
-		if (adj && adj.ownerIndex != province.ownerIndex) borders.push(adj);
-		adj = getProvince(province.row + 1, province.col);
-		if (adj && adj.ownerIndex != province.ownerIndex) borders.push(adj);
-		adj = getProvince(province.row + 1, province.col - 1);
-		if (adj && adj.ownerIndex != province.ownerIndex) borders.push(adj);
-		adj = getProvince(province.row + 1, province.col + 1);
-		if (adj && adj.ownerIndex != province.ownerIndex) borders.push(adj);
-		return borders;
-	}
-
-	// Sets the current goal province for each nation.
-	function determineTargetProvince() {
-		for (var i = 0; i < numRows; i++) {
-			for (var j = 0; j < numCols; j++) {
-				var borders = getBorders(grid[i][j]);
-				for (var n = 0; n < borders.length; n++) {
-					if (nationsArr[grid[i][j].ownerIndex]
-						                     .targetProvince == undefined ||
-						borders[n].econValue > 
-						nationsArr[grid[i][j].ownerIndex]
-						                     .targetProvince
-						                     .econValue) {
-						nationsArr[grid[i][j].ownerIndex].targetProvince = 
-							borders[n];
-					}
-				}
-			}
-		}
-	}
-
 	// Color each province based on the province owner.
 	function drawMap() {
 		for (var i = 0; i < numRows; i++) {
@@ -131,27 +124,9 @@
 		}
 	}
 
-	// Determine which provinces change ownership this turn.
-	function handleWarfare() {
-		// Do a basic 1v1 strength comparison. Winner gets a random province.
-		if (nationsArr[0].armySize > nationsArr[1].armySize) {
-			grid[nationsArr[0].targetProvince.row]
-			    [nationsArr[0].targetProvince.col].ownerIndex = 0;
-			nationsArr[0].targetProvince = undefined;
-
-		}
-		else {
-			grid[nationsArr[1].targetProvince.row] 
-			    [nationsArr[1].targetProvince.col].ownerIndex = 1;
-			nationsArr[1].targetProvince = undefined;
-		}
-	}
-
 	// Runs the simulation until stopped.
 	function simLoop() {
 		ctx.clearRect(0,0,800,400);
-		determineTargetProvince();
-		handleWarfare();
 		drawMap();
 		window.requestAnimationFrame(simLoop);
 	}
