@@ -2,6 +2,19 @@
 (function() {
 	var canvas = document.getElementById('sim-box');
 	var ctx = canvas.getContext('2d');
+	var nationInfo = document.getElementById('nation-info');
+
+	/* Add click handler for canvas. */
+	canvas.addEventListener('click', function(event) {
+	    var x = event.pageX - canvas.offsetLeft;
+	    var y = event.pageY - canvas.offsetTop;
+	    var gridX = Math.floor(x / 10);
+	    var gridY = Math.floor(y / 10);
+	    selectedNation = nationsArr[grid[gridY][gridX].ownerIndex];
+	    nationInfo.innerHTML = selectedNation.name + '<br>' + 
+	                           'Population: ' + selectedNation.population + 
+	                           '<br>' + 'Economy: ' + selectedNation.econValue;
+	}, false);
 
 	/** 
 	 * TODO: Make size of each square dynamic based on canvas size. For now,
@@ -15,9 +28,14 @@
 	                 '#008080','#e6beff','#aa6e28','#fffac8','#800000',
 	                 '#aaffc3','#808000','#ffd8b1','#000080','#808080',
 	                 '#FFFFFF','#000000'];
+	var namesArr = ['Red','Green','Yellow','Blue','Orange','Purple','Cyan',
+	                'Magenta','Lime','Pink','Teal','Lavender','Brown','Beige',
+	                'Maroon','Mint','Olive','Coral','Navy','Grey','White',
+	                'Black'];
 	var nationsArr = [];
 	var grid = generateGrid();
-	createNations(12);
+	var selectedNation = undefined;
+	createNations(8);
 	initNations();
 	simLoop();
 
@@ -43,20 +61,20 @@
 		province.x = row;
 		province.col = col;
 		province.y = col;
-		province.population = Math.floor(Math.random() * 100000);
+		province.population = Math.floor(Math.random() * 100);
 		province.econValue = Math.floor(Math.random() * 10);
 		province.ownerIndex = -1;
 		province.isCapital = 0;
 		return province;
 	}
 
-	// Generates a new nation given a color
-	function generateNation(color) {
+	// Generates a new nation given an index for color and name
+	function generateNation(index) {
 		var nation = {};
-		nation.color = color;
+		nation.color = colorsArr[index];
+		nation.name = namesArr[index];
 		nation.population = 0;
 		nation.econValue = 0;
-		nation.armySize = 0;
 		do {
 			nation.capital = grid[Math.floor(Math.random() * 40)][Math.floor(Math.random() * 80)];
 		}
@@ -69,7 +87,7 @@
 	function createNations(numNations) {
 		var fillqueue = [];
 		for (var i = 0; i < numNations; i++) {
-			var nation = generateNation(colorsArr[i]);
+			var nation = generateNation(i);
 			nation.capital.ownerIndex = i;
 			fillqueue.push(nation.capital);
 			nationsArr.push(nation);
@@ -100,8 +118,6 @@
 			for (var j = 0; j < numCols; j++) {
 				nationsArr[grid[i][j].ownerIndex].population 
 					+= grid[i][j].population;
-				nationsArr[grid[i][j].ownerIndex].armySize
-					+= grid[i][j].population / 1000;
 				nationsArr[grid[i][j].ownerIndex].econValue
 					+= grid[i][j].econValue;
 			}
