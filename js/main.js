@@ -3,9 +3,13 @@
 	var canvas = document.getElementById('sim-box');
 	var ctx = canvas.getContext('2d');
 	var nationInfo = document.getElementById('nation-info');
-	var nationCount = 16;
+	var playButton = document.getElementById('play-button');
+	var pauseButton = document.getElementById('pause-button');
+	var resetButton = document.getElementById('reset-button');
+	var nationCount;
 	var dxdy = [[-1,0],[1,0],[0,-1],[0,1]]; // Only support 4 direction movement
 	var paused = true;
+	var loopTimeout;
 
 	/* Add click handler for canvas. */
 	canvas.addEventListener('click', function(event) {
@@ -19,6 +23,17 @@
 	                           '<br>' + 'Economy: ' + selectedNation.econValue +
 	                           '<br>' + 'Military: ' + selectedNation.military; 
 	}, false);
+
+	/* Add click handler for play, pause, reset. */
+	playButton.addEventListener('click', function(event) {
+		paused = false;
+	});
+	pauseButton.addEventListener('click', function(event) {
+		paused = true;
+	});
+	resetButton.addEventListener('click', function(event) {
+		resetGame();
+	});
 
 	/** 
 	 * TODO: Make size of each square dynamic based on canvas size. For now,
@@ -168,7 +183,10 @@
 	                           'Population: ' + selectedNation.population + 
 	                           '<br>' + 'Economy: ' + selectedNation.econValue +
 	                           '<br>' + 'Military: ' + selectedNation.military;
-	    } 
+	    }
+	    else {
+	    	nationInfo.innerHTML = '';
+	    }
 	}
 
 	// Commit military to threatening nations.
@@ -295,6 +313,11 @@
 	}
 
 	function resetGame() {
+		nationCount = document.getElementById('nation-count').value;
+		if (nationCount < 2) nationCount = 2;
+		if (nationCount > 22) nationCount = 22;
+		clearTimeout(loopTimeout);
+		nationsArr = [];
 		grid = generateGrid();
 		selectedNation = undefined;
 		createNations(nationCount);
@@ -313,7 +336,7 @@
 			develop();
 			drawMap();
 		}
-		setTimeout(simLoop, 500);
+		loopTimeout = setTimeout(simLoop, 500);
 	}
 
 })();
