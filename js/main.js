@@ -14,6 +14,7 @@
 	// Only support 4 direction movement.
 	var dxdy = [[-1,0],[1,0],[0,-1],[0,1]]; 
 	var paused = true;
+	var timeoutLoop;
 	var animationLoop;
 	/** 
 	 * TODO: Make size of each square dynamic based on canvas size. For now,
@@ -84,8 +85,8 @@
 		province.y = col;
 
 		// Economic variables.
-		province.population = Math.floor(Math.random() * 100);
-		province.econValue = Math.floor(Math.random() * 10);
+		province.population = Math.floor(Math.random() * 10);
+		province.econValue = Math.floor(Math.random() * 2);
 
 		// Province owner.
 		province.ownerIndex = -1;
@@ -151,7 +152,9 @@
 	function selectCapital() {
 		var capital;
 		do {
-			capital = grid[Math.floor(Math.random() * numRows)][Math.floor(Math.random() * numCols)];
+			var randRow = Math.floor(Math.random() * numRows);
+			var randCol = Math.floor(Math.random() * numCols);
+			capital = grid[randRow][randCol];
 		}
 		while (capital.isCapital);
 		capital.isCapital = 1;
@@ -189,7 +192,8 @@
 
 			// Expand owner to all unowned adjacent provinces.
 			for (var xy = 0; xy < dxdy.length; xy++) {
-				var prov = getProvince(curr.x + dxdy[xy][0], curr.y + dxdy[xy][1]);
+				var prov = getProvince(curr.x + dxdy[xy][0],
+					                   curr.y + dxdy[xy][1]);
 				if (prov === undefined) continue;
 				if (prov.ownerIndex === -1) {
 					// If unowned, add owner and push to queue.
@@ -328,7 +332,8 @@
 			if (Math.floor(Math.random() * 2) !== 0) {
 				// Update ownership of all lost provinces.
 				for (var xy = 0; xy < dxdy.length; xy++) {
-					var prov = getProvince(curr.x + dxdy[xy][0], curr.y + dxdy[xy][1]);
+					var prov = getProvince(curr.x + dxdy[xy][0], 
+						                   curr.y + dxdy[xy][1]);
 					if (prov === undefined) continue;
 					if (prov.ownerIndex === loser.ownerIndex) {
 						// Will be lost if owned by the loser.
@@ -448,7 +453,8 @@
 		if (nationCount > 22) nationCount = 22;
 
 		// Remove old loops.
-		cancelAnimationFrame(animationLoop);
+		//cancelAnimationFrame(animationLoop);
+		clearTimeout(timeoutLoop);
 
 		// Reset global game variables.
 		nationsArr = [];
@@ -463,6 +469,7 @@
 		// Begin paused with the map drawn.
 		paused = true;
 		drawMap();
+		drawNationInfo();
 
 		// Start game.
 		simLoop();
@@ -477,9 +484,10 @@
 			updateThreats();
 			develop();
 			drawChangedProvinces();
-			drawNationInfo();
 		}
-		animationLoop = window.requestAnimationFrame(simLoop);
+		drawNationInfo();
+		timeoutLoop = setTimeout(simLoop, 40);
+		//animationLoop = window.requestAnimationFrame(simLoop);
 	}
 
 })();
