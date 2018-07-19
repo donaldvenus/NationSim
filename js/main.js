@@ -21,7 +21,14 @@
 	    nationInfo.innerHTML = selectedNation.name + '<br>' + 
 	                           'Population: ' + selectedNation.population + 
 	                           '<br>' + 'Economy: ' + selectedNation.econValue +
-	                           '<br>' + 'Military: ' + selectedNation.military; 
+	                           '<br>' + 'Military: ' + selectedNation.military +
+	                           '<br>' + 'prov borders: ' + grid[gridY][gridX].totalBorders; 
+	    for (var i = 0; i < selectedNation.borders.length; i++) {
+	    	selectedNation.borders[i].forEach(function(prov) {
+	    		ctx.fillStyle = "black";
+				ctx.fillRect(prov.y * 10, prov.x * 10, 10, 10);
+	    	});
+	    }
 	}, false);
 
 	/* Add click handler for play, pause, reset. */
@@ -83,6 +90,7 @@
 		province.borders = [];
 		province.borders.length = nationCount;
 		province.borders.fill(0);
+		province.totalBorders = 0;
 		return province;
 	}
 
@@ -131,13 +139,14 @@
 				if (prov.ownerIndex === -1) {
 					prov.ownerIndex = curr.ownerIndex;
 					fillqueue.push(prov);
+					continue;
 				}
-				else if (prov.ownerIndex !== curr.ownerIndex) {
+				curr.borders[prov.ownerIndex]++;
+				curr.totalBorders++;
+				if (prov.ownerIndex !== curr.ownerIndex) {
 					// Might not need both...
 					nationsArr[curr.ownerIndex].borders[prov.ownerIndex].add(curr);
 					nationsArr[prov.ownerIndex].borders[curr.ownerIndex].add(prov);
-					prov.borders[curr.ownerIndex]++;
-					curr.borders[prov.ownerIndex]++;
 					nationsArr[curr.ownerIndex].threats[prov.ownerIndex] = nationsArr[prov.ownerIndex].military;
 				}
 			}
@@ -237,21 +246,27 @@
 		if (loser.military < 1) loser.military = 1;
 		if (winner.military < 1) winner.military = 1;
 		var oldBorders = new Set(winner.borders[loser.ownerIndex]);
+		var lostProvinces = [];
 		oldBorders.forEach(function(curr) {
 			// curr is the interal border provinces of the winner
 			// prov is a bordering province of a curr
-			if (Math.floor(Math.random() * 2) !== 0) {
-				curr.borders[loser.ownerIndex] = 0;
+			//if (Math.floor(Math.random() * 2) !== 0) {
 				for (var xy = 0; xy < dxdy.length; xy++) {
 					var prov = getProvince(curr.x + dxdy[xy][0], curr.y + dxdy[xy][1]);
 					if (prov === undefined) continue;
 					if (prov.ownerIndex === loser.ownerIndex) {
 						prov.ownerIndex = winner.ownerIndex;
-						adjustBorders(loser, prov);
+						// Handle as adj?
+						//curr.borders[loser.ownerIndex]--;
+						//curr.borders[winner.ownerIndex]++;
+						lostProvinces.push(prov);
 					}
 				}
-			}
+			//}
 		});
+		for (var i = 0; i < lostProvinces.length; i++) {
+			adjustBorders(loser, lostProvinces[i]);
+		}
 	}
 
 	// Fixes borders when a province changes hands
@@ -262,46 +277,31 @@
 		nationsArr[prov.ownerIndex].econValue += prov.econValue;
 		nationsArr[prov.ownerIndex].population += prov.population;
 
-		// Remove lost province from any of loser's borders and reset province
-		// to have no borders (will be determined in next step).
-		for (var i = 0; i < prov.borders.length; i++) {
-			if (prov.borders[i] > 0) {
-				loser.borders[i].delete(prov);
-			}
-			prov.borders[i] = 0;
-		}
-		// winner borders
-		// loser borders
-		// province borders
-		// adjacent borders + third party nation borders
-		// TODO remove border between adjacent and loser if necessary
-		// Look at adjacent provinces and determine any other changes.
+		setBorders(prov, loser);
 		for (var xy = 0; xy < dxdy.length; xy++) {
 			var adj = getProvince(prov.x + dxdy[xy][0], prov.y + dxdy[xy][1]);
 			if (adj === undefined) continue;
-			// If owned by winner, do nothing.
-			if (adj.ownerIndex === prov.ownerIndex) continue;
-			// adj borders new owner and no longer old owner
-			// prov borders owner of adjacent
-			adj.borders[loser.ownerIndex]--;
-			adj.borders[prov.ownerIndex]++;
-			prov.borders[adj.ownerIndex]++;
+			setBorders(adj, nationsArr[adj.ownerIndex]);
+		}
+	}
 
-			// adjacent nation gains border with new province holder and loses
-			// border with old owner if last border was lost.
-			nationsArr[adj.ownerIndex].borders[prov.ownerIndex].add(adj);
-			// If adj no longer borders loser, remove province from owner's borders for the loser
-			if (adj.borders[loser.ownerIndex] === 0) {
-				nationsArr[adj.ownerIndex].borders[loser.ownerIndex].delete(adj);
-				// If this was the last border, remove threat of loser to adj's owner.
-				if (nationsArr[adj.ownerIndex].borders[loser.ownerIndex].empty) 
-					nationsArr[adj.ownerIndex].threats[loser.ownerIndex] = -1;
+	// Set the borders for a province.
+	function setBorders(prov, oldOwner) {
+		var owner = nationsArr[prov.ownerIndex];
+		for (var i = 0; i < prov.borders.length; i++) {
+			if (prov.borders[i] > 0) {
+				oldOwner.borders[i].delete(prov);
 			}
-			// owner of prov gains border with adjacent's owner and associated
-			// threat level. Owner of adj gains threat with new owner of prov
-			nationsArr[prov.ownerIndex].borders[adj.ownerIndex].add(prov);
-			nationsArr[adj.ownerIndex].threats[prov.ownerIndex] = nationsArr[prov.ownerIndex].military;
-			nationsArr[prov.ownerIndex].threats[adj.ownerIndex] = nationsArr[adj.ownerIndex].military;
+			// TODO: Deal with threat
+			prov.borders[i] = 0;
+		}
+		for (var xy = 0; xy < dxdy.length; xy++) {
+			var adj = getProvince(prov.x + dxdy[xy][0], prov.y + dxdy[xy][1]);
+			if (adj === undefined) continue;
+			prov.borders[adj.ownerIndex]++;
+			if (adj.ownerIndex !== prov.ownerIndex) {
+				owner.borders[adj.ownerIndex].add(prov);
+			}
 		}
 	}
 
