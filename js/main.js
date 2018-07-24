@@ -133,8 +133,9 @@
 
 		// Contains the nation's border provinces to all other nations.
 		nation.borders = [];
-		nation.borders.length = nationCount;
-		nation.borders.fill(new Set());
+		for (var i = 0; i < nationCount; i++) {
+			nation.borders.push(new Set());
+		}
 
 		/**
 		 * Contains the current committed military forces against other nations
@@ -181,14 +182,14 @@
 		 */
 		while (fillqueue.length !== 0) {
 
-			// Randomly skip provinces to give better borders.
-			if (Math.floor(Math.random() * 2) !== 0) {
-				fillqueue.push(fillqueue.shift());
-				continue;
-			}
-
 			// Current province from queue.
 			var curr = fillqueue.shift();
+
+			// Randomly skip provinces to give better borders.
+			if (Math.floor(Math.random() * 2) !== 0) {
+				fillqueue.push(curr);
+				continue;
+			}
 
 			// Expand owner to all unowned adjacent provinces.
 			for (var xy = 0; xy < dxdy.length; xy++) {
@@ -247,7 +248,7 @@
 	// Update the threat level between two nations given a change in borders.
 	function updateThreat(nation1, nation2) {
 		// If border exists, threat is equal to the military strength.
-		if (!nation1.borders[nation2.ownerIndex].empty) {
+		if (nation1.borders[nation2.ownerIndex].size !== 0) {
 			nation1.threats[nation2.ownerIndex] = nation2.military;
 			nation2.threats[nation1.ownerIndex] = nation1.military;
 		}
