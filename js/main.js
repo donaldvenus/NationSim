@@ -486,7 +486,7 @@
 			drawChangedProvinces();
 		}
 		drawNationInfo();
-		timeoutLoop = setTimeout(simLoop, 40);
+		timeoutLoop = setTimeout(simLoop, 100);
 		//animationLoop = window.requestAnimationFrame(simLoop);
 	}
 

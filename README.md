@@ -26,4 +26,7 @@
  - Advanced economic ideas (model industrial centers, agriculture etc).
  - Economic growth/decay.
  - Population growth/decay modeling.
+ - Concept of originally owned provinces and territory change.
+ - Loss of capital mechanics.
+ - Revolt within large nations.
  - etc etc etc
